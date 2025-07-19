@@ -1,0 +1,5 @@
+Flask
+Flask-Cors
+requests
+pandas
+gunicorn # This is a production-grade web server for Flask
