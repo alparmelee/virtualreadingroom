@@ -315,7 +315,7 @@
         let currentPage = 0; // 0-indexed page
 
         async function fetchBooks() {
-            loadingStatus.textContent = 'Loading books...';
+            loadingStatus.textContent = 'Loading books... (This can take about 30s if the site has not been used in the last 15 minutes.)';
             booksTableBody.innerHTML = ''; // Clear previous results
 
             const searchTerm = searchInput.value;
