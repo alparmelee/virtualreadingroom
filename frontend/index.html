@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Virtual Reading Room</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: url('book.jpg') center center;
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Dark overlay for better readability */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(3px);
+            min-height: 100vh;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h4 {
+            text-align: center;
+            color: #34495e;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .explanation {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .controls input, .controls select, .controls button {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .controls input {
+            flex: 2;
+            min-width: 200px;
+        }
+
+        .controls select {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .controls button {
+            background: #3498db;
+            color: white;
+            border: 2px solid #3498db;
+            cursor: pointer;
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        .controls button:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .controls input:focus, .controls select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .book-list {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #loadingStatus {
+            text-align: center;
+            font-size: 16px;
+            color: #7f8c8d;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #3498db;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #currentPage {
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 8px 16px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 6px;
+        }
+
+        /* Mobile responsive table */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .controls input, .controls select, .controls button {
+                width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Virtual Reading Room</h1>
+        <h4>Created by alparmelee</h4>
+        <p class="explanation">
+            This tool showcases an ethical way of working with Project Gutenberg's vast library. Instead of live scraping their site (which is against their policy), I’ve pre-downloaded and organized their official catalog into my own database. This demonstrates responsible data handling, database integration, and a full-stack web application. Click on a book's ID to open its text. (Note: Some books may not be available due to various reasons such as copyright issues or missing files.)
+        </p>
+
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search by title or author...">
+            <select id="languageFilter">
+                <option value="">All Languages</option>
+            </select>
+            <button id="searchButton">Search</button>
+        </div>
+
+        <div class="book-list">
+            <p id="loadingStatus">Loading books...</p>
+            <table id="booksTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Language</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <button id="prevPage" disabled>Previous</button>
+                <span id="currentPage">Page 1</span>
+                <button id="nextPage">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const languageFilter = document.getElementById('languageFilter');
+        const searchButton = document.getElementById('searchButton');
+        const booksTableBody = document.querySelector('#booksTable tbody');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const currentPageSpan = document.getElementById('currentPage');
+
+        const API_BASE_URL = 'http://127.0.0.1:5000'; // Flask backend URL
+        const BOOKS_PER_PAGE = 50;
+        let currentPage = 0; // 0-indexed page
+
+        async function fetchBooks() {
+            loadingStatus.textContent = 'Loading books...';
+            booksTableBody.innerHTML = ''; // Clear previous results
+
+            const searchTerm = searchInput.value;
+            const selectedLanguage = languageFilter.value;
+
+            let url = `${API_BASE_URL}/books?limit=${BOOKS_PER_PAGE}&offset=${currentPage * BOOKS_PER_PAGE}`;
+            if (searchTerm) {
+                url += `&search=${encodeURIComponent(searchTerm)}`;
+            }
+            if (selectedLanguage) {
+                url += `&lang=${encodeURIComponent(selectedLanguage)}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const books = await response.json();
+
+                if (books.length === 0 && currentPage === 0) {
+                    loadingStatus.textContent = 'No books found matching your criteria.';
+                    nextPageBtn.disabled = true;
+                } else if (books.length === 0) {
+                    loadingStatus.textContent = 'No more books.';
+                    nextPageBtn.disabled = true;
+                }
+                else {
+                    loadingStatus.textContent = ''; // Clear loading status
+                }
+
+                books.forEach(book => {
+                    const row = booksTableBody.insertRow();
+                    const idCell = row.insertCell(0);
+                    // Now, the link directly opens the book_viewer.html page in a new tab
+                    // and passes the book ID via a query parameter (?id=...)
+                    idCell.innerHTML = `<a href="book_viewer.html?id=${book.gutenberg_id}" target="_blank">${book.gutenberg_id}</a>`;
+                    // Remove the event listener as it's no longer needed for direct linking
+                    // idCell.querySelector('.view-book-link').addEventListener('click', ...);
+                    row.insertCell(1).textContent = book.title;
+                    row.insertCell(2).textContent = book.author || 'N/A';
+                    row.insertCell(3).textContent = book.language || 'N/A';
+                });
+
+                // Update pagination buttons
+                prevPageBtn.disabled = currentPage === 0;
+                nextPageBtn.disabled = books.length < BOOKS_PER_PAGE;
+                currentPageSpan.textContent = `Page ${currentPage + 1}`;
+
+            } catch (error) {
+                console.error('Error fetching books:', error);
+                loadingStatus.textContent = 'Error loading books. Make sure the backend server is running.';
+                nextPageBtn.disabled = true;
+                prevPageBtn.disabled = true;
+            }
+        }
+
+        async function fetchLanguages() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/languages`);
+                const languages = await response.json();
+
+                languages.forEach(lang => {
+                    const option = document.createElement('option');
+                    option.value = lang;
+                    option.textContent = lang;
+                    languageFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching languages:', error);
+            }
+        }
+
+        // --- Event Listeners ---
+        searchButton.addEventListener('click', () => {
+            currentPage = 0;
+            fetchBooks();
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                currentPage = 0;
+                fetchBooks();
+            }
+        });
+
+        languageFilter.addEventListener('change', () => {
+            currentPage = 0;
+            fetchBooks();
+        });
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                fetchBooks();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            currentPage++;
+            fetchBooks();
+        });
+
+        // Initial fetch when the page loads
+        fetchLanguages();
+        fetchBooks();
+    </script>
+</body>
+</html>

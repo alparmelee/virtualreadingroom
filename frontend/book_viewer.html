@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="viewerTitle">Loading Book...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and ensure full viewport coverage */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+       
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: url('book.jpg') center center;
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Dark overlay to make text more readable */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .e-reader-container {
+            background-color: rgba(251, 248, 240, 0.95);
+            backdrop-filter: blur(2px);
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        /* Create centered reading area with backdrop visible on sides */
+        @media (min-width: 1024px) {
+            .e-reader-container {
+                width: 800px;
+                left: 50%;
+                transform: translateX(-50%);
+                box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .e-reader-container {
+                width: 90vw;
+                left: 50%;
+                transform: translateX(-50%);
+                box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .book-content {
+            flex: 1;
+            padding: 2rem;
+            line-height: 1.75;
+            color: #374151;
+            font-size: 1.125rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            height: 100%;
+        }
+
+        .book-content pre {
+            max-width: 100%;
+            margin: 0 auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.75;
+            font-size: 1.125rem;
+            height: auto;
+            min-height: 100%;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 767px) {
+            .e-reader-container {
+                width: 100vw;
+                transform: none;
+                left: 0;
+            }
+            
+            .book-content {
+                padding: 1.5rem;
+                font-size: 1rem;
+            }
+           
+            .book-content pre {
+                font-size: 1rem;
+            }
+        }
+       
+        @media (max-width: 480px) {
+            .book-content {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+       
+        .loading-text {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #6b7280;
+            margin-top: 20vh;
+        }
+
+        /* Ensure scrollbar styling */
+        .book-content::-webkit-scrollbar {
+            width: 8px;
+        }
+       
+        .book-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+       
+        .book-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+       
+        .book-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="e-reader-container">
+        <div id="book-content" class="book-content">
+            <p class="loading-text">Loading book content...</p>
+        </div>
+    </div>
+
+    <script>
+        const bookContentDiv = document.getElementById('book-content');
+        const viewerTitle = document.getElementById('viewerTitle');
+
+        const API_BASE_URL = 'http://127.0.0.1:5000'; // Flask backend URL
+
+        async function loadBookContent() {
+            // Get book ID from URL query parameter (e.g., ?id=123)
+            const urlParams = new URLSearchParams(window.location.search);
+            const gutenbergId = urlParams.get('id');
+
+            if (!gutenbergId) {
+                bookContentDiv.innerHTML = '<p class="loading-text" style="color: red;">Error: No book ID provided in the URL.</p>';
+                viewerTitle.textContent = 'Error';
+                return;
+            }
+
+            bookContentDiv.innerHTML = '<p class="loading-text">Loading book content for ID ' + gutenbergId + '...</p>';
+            viewerTitle.textContent = `Book ID ${gutenbergId} - Loading...`;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/book_content/${gutenbergId}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                }
+                const content = await response.text();
+
+                // Display content with proper escaping for HTML
+                const escapedContent = content
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+               
+                bookContentDiv.innerHTML = `<pre>${escapedContent}</pre>`;
+                viewerTitle.textContent = `Book ID ${gutenbergId}`;
+
+                // Scroll to top after loading
+                bookContentDiv.scrollTop = 0;
+
+            } catch (error) {
+                console.error('Error fetching book content:', error);
+                bookContentDiv.innerHTML = '<p class="loading-text" style="color: red;">We are sorry but this book is not currently available.</p>';
+                viewerTitle.textContent = 'Error Loading Book';
+            }
+        }
+
+        // Handle window resize to maintain full screen
+        function handleResize() {
+            // Force a layout recalculation
+            document.body.style.height = window.innerHeight + 'px';
+        }
+
+        // Load content when the page is ready
+        document.addEventListener('DOMContentLoaded', loadBookContent);
+        window.addEventListener('resize', handleResize);
+       
+        // Initial resize call
+        handleResize();
+    </script>
+</body>
+</html>
